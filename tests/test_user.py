@@ -30,17 +30,33 @@ def auth_client(client, app):
     return client, auth_header, test_email
 
 
-def test_get_profile(auth_client):
+def test_get_all_users(auth_client, app):
     client, auth_header, test_email = auth_client
+    
+    # Crear algunos usuarios adicionales para la prueba
+    with app.app_context():
+        # Crear usuarios adicionales directamente en la BD
+        user1 = User(fullname=fake.name(), email=fake.email(), password='hashed_password_1')
+        user2 = User(fullname=fake.name(), email=fake.email(), password='hashed_password_2')
+        from app import db
+        db.session.add(user1)
+        db.session.add(user2)
+        db.session.commit()
 
-    response = client.get('/profile', headers=auth_header)
+    response = client.get('/getAllUsers', headers=auth_header)
 
     assert response.status_code == 200
-    assert response.json['message'] == 'Profile retrieved successfully'
-    assert 'dataUser' in response.json
-    assert response.json['dataUser']['email'] == test_email
-    assert 'id' in response.json['dataUser']
-    assert 'fullname' in response.json['dataUser']
+    assert response.json['message'] == 'Users retrieved successfully'
+    assert 'users' in response.json
+    assert 'total_users' in response.json
+    assert response.json['total_users'] >= 3  # Al menos 3 usuarios (el original + 2 adicionales)
+    
+    # Verificar que los usuarios no incluyen contraseñas
+    for user in response.json['users']:
+        assert 'id' in user
+        assert 'fullname' in user
+        assert 'email' in user
+        assert 'password' not in user  # No debe incluir contraseñas
 
 
 def test_update_user(auth_client):

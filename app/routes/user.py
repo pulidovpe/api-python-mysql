@@ -23,6 +23,27 @@ def get_profile():
         }
     }), 200
 
+@user_bp.route('/getAllUsers', methods=['GET'])
+@jwt_required()
+def get_all_users():
+    """Obtener lista de todos los usuarios (sin contraseñas)"""
+    users = User.query.all()
+    users_list = []
+    
+    for user in users:
+        users_list.append({
+            'id': user.id,
+            'fullname': user.fullname,
+            'email': user.email,
+            'created_at': user.id  # Usando ID como referencia temporal
+        })
+    
+    return jsonify({
+        'message': 'Users retrieved successfully',
+        'users': users_list,
+        'total_users': len(users_list)
+    }), 200
+
 @user_bp.route('/update', methods=['PUT'])
 @jwt_required()
 def update_user():
