@@ -50,6 +50,7 @@ DB_PASSWORD=password
 | `/`              | GET    | Ruta principal       |                            | `{"response":"Flask RESTful API"}`|
 | `/register`      | POST   | Crear usuario        | fullname, email, password  | JSON {message, access_token}       |
 | `/login`         | POST   | Autenticar usuario   | email, password            | JSON {access_token}                |
+| `/profile`       | GET    | Obtener perfil       | Bearer Token               | JSON {dataUser, message}           |
 | `/update`        | PUT    | Actualizar usuario   | Bearer Token, fullname/email | JSON {dataUser, message}         |
 | `/updatePassword`| PUT    | Actualizar contraseña| Bearer Token, newPassword  | JSON {message}                     |
 | `/delete`        | DELETE | Eliminar usuario     | Bearer Token               | JSON {message}                     |
@@ -67,6 +68,7 @@ Todos los tests están funcionando correctamente:
 
 - ✅ **test_register**: Verifica la creación de usuarios
 - ✅ **test_login**: Verifica la autenticación de usuarios  
+- ✅ **test_get_profile**: Verifica la obtención del perfil del usuario
 - ✅ **test_update_user**: Verifica la actualización de datos de usuario
 - ✅ **test_update_password**: Verifica la actualización de contraseñas
 - ✅ **test_delete_user**: Verifica la eliminación de usuarios

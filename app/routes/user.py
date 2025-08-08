@@ -6,6 +6,23 @@ from werkzeug.exceptions import BadRequest, NotFound
 
 user_bp = Blueprint('user', __name__)
 
+@user_bp.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
+    if not user:
+        raise NotFound('User not found')
+
+    return jsonify({
+        'message': 'Profile retrieved successfully',
+        'dataUser': {
+            'id': user.id,
+            'fullname': user.fullname,
+            'email': user.email
+        }
+    }), 200
+
 @user_bp.route('/update', methods=['PUT'])
 @jwt_required()
 def update_user():

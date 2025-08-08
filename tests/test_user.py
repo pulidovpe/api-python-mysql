@@ -30,6 +30,19 @@ def auth_client(client, app):
     return client, auth_header, test_email
 
 
+def test_get_profile(auth_client):
+    client, auth_header, test_email = auth_client
+
+    response = client.get('/profile', headers=auth_header)
+
+    assert response.status_code == 200
+    assert response.json['message'] == 'Profile retrieved successfully'
+    assert 'dataUser' in response.json
+    assert response.json['dataUser']['email'] == test_email
+    assert 'id' in response.json['dataUser']
+    assert 'fullname' in response.json['dataUser']
+
+
 def test_update_user(auth_client):
     client, auth_header, test_email = auth_client
     new_email = fake.email()
