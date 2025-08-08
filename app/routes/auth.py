@@ -1,46 +1,44 @@
 from flask import Blueprint, request, jsonify
+from passlib.apps import custom_app_context as pwd_context
 from flask_jwt_extended import create_access_token
 from app import db
-from app.models.user import User
+from app.models import User
+from werkzeug.exceptions import BadRequest, Unauthorized
 
 auth_bp = Blueprint('auth', __name__)
-
-@auth_bp.route('/', methods=['GET'])
-def index():
-    return jsonify({'response': 'Flask RESTful API'})
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
-    fullname = data.get('fullname')
-    email = data.get('email')
-    password = data.get('password')
 
-    if not all([fullname, email, password]):
-        return jsonify({'message': 'Missing fields'}), 400
+    if not data or not data.get('email') or not data.get('password'):
+        raise BadRequest('Email and password are required')
 
-    if User.query.filter_by(email=email).first():
-        return jsonify({'message': 'User already exists'}), 400
+    if User.query.filter_by(email=data['email']).first():
+        raise BadRequest('Email already registered')
 
-    new_user = User(fullname, email, password)
+    hashed_password = pwd_context.hash(data['password'])
+    new_user = User(fullname=data.get('fullname'), email=data['email'], password=hashed_password)
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({'message': 'User created successfully', 'dataUser': {'fullname': fullname, 'email': email}}), 201
+    # Usamos el email del usuario como identidad en el JWT
+    access_token = create_access_token(identity=new_user.email)
+    return jsonify({'message': 'User created successfully', 'access_token': access_token}), 201
+
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
 
-    user = User.query.filter_by(email=email).first()
-    if not user or not user.verify_password(password):
-        return jsonify({'message': 'Invalid credentials'}), 401
+    if not data or not data.get('email') or not data.get('password'):
+        raise BadRequest('Email and password are required')
 
-    access_token = create_access_token(identity=user.id)
-    return jsonify({
-        'auth': True,
-        'dataUser': {'fullname': user.fullname, 'email': user.email},
-        'access_token': access_token
-    }), 200
+    user = User.query.filter_by(email=data['email']).first()
+    
+    if not user or not user.verify_password(data['password']):
+        raise Unauthorized('Invalid credentials')
+
+    # Usamos el email del usuario como identidad en el JWT
+    access_token = create_access_token(identity=user.email)
+    return jsonify({'access_token': access_token}), 200

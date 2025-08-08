@@ -1,89 +1,74 @@
 import pytest
-from app import create_app, db
 from app.models.user import User
-from flask_jwt_extended import create_access_token
+from faker import Faker
+
+fake = Faker()
 
 @pytest.fixture
-def app():
-    app = create_app()
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"mysql+pymysql://{os.getenv('DB_USERNAME')}:{os.getenv('DB_PASSWORD')}"
-        f"@{os.getenv('DB_HOST')}/test_{os.getenv('DB_DATABASE')}"
-    )
-    with app.app_context():
-        db.create_all()
-    yield app
-    with app.app_context():
-        db.drop_all()
+def auth_client(client, app):
+    test_email = fake.email()
+    test_password = 'password123'
+    test_fullname = fake.name()
 
-@pytest.fixture
-def client(app):
-    return app.test_client()
-
-def test_update_user(client):
-    # Registrar usuario
+    # Registro
     client.post('/register', json={
-        'fullname': 'Test User',
-        'email': 'test@example.com',
-        'password': 'password123'
+        'fullname': test_fullname,
+        'email': test_email,
+        'password': test_password
     })
-    # Login para obtener token
+
+    # Login y token
     login_response = client.post('/login', json={
-        'email': 'test@example.com',
-        'password': 'password123'
+        'email': test_email,
+        'password': test_password
     })
     access_token = login_response.json['access_token']
-    # Actualizar usuario
+
+    # Diccionario de autorización listo
+    auth_header = {'Authorization': f'Bearer {access_token}'}
+
+    return client, auth_header, test_email
+
+
+def test_update_user(auth_client):
+    client, auth_header, test_email = auth_client
+    new_email = fake.email()
+
     response = client.put('/update', json={
         'fullname': 'Updated User',
-        'email': 'updated@example.com'
-    }, headers={'Authorization': f'Bearer {access_token}'})
+        'email': new_email
+    }, headers=auth_header)
+
     assert response.status_code == 200
     assert response.json['message'] == 'User updated successfully'
     assert response.json['dataUser']['fullname'] == 'Updated User'
-    assert response.json['dataUser']['email'] == 'updated@example.com'
+    assert response.json['dataUser']['email'] == new_email
 
-def test_update_password(client):
-    # Registrar usuario
-    client.post('/register', json={
-        'fullname': 'Test User',
-        'email': 'test@example.com',
-        'password': 'password123'
-    })
-    # Login para obtener token
-    login_response = client.post('/login', json={
-        'email': 'test@example.com',
-        'password': 'password123'
-    })
-    access_token = login_response.json['access_token']
-    # Actualizar contraseña
+
+def test_update_password(auth_client, app):
+    client, auth_header, test_email = auth_client
+    new_password = 'newpassword123_updated'
+
     response = client.put('/updatePassword', json={
-        'newPassword': 'newpassword123'
-    }, headers={'Authorization': f'Bearer {access_token}'})
+        'newPassword': new_password
+    }, headers=auth_header)
+
     assert response.status_code == 200
     assert response.json['message'] == 'Password updated successfully'
-    # Verificar que la contraseña se haya actualizado
-    user = User.query.filter_by(email='test@example.com').first()
-    assert user.verify_password('newpassword123')
+    
+    with app.app_context():
+        user = User.query.filter_by(email=test_email).first()
+        assert user.verify_password(new_password)
 
-def test_delete_user(client):
-    # Registrar usuario
-    client.post('/register', json={
-        'fullname': 'Test User',
-        'email': 'test@example.com',
-        'password': 'password123'
-    })
-    # Login para obtener token
-    login_response = client.post('/login', json={
-        'email': 'test@example.com',
-        'password': 'password123'
-    })
-    access_token = login_response.json['access_token']
-    # Eliminar usuario
-    response = client.delete('/delete', headers={'Authorization': f'Bearer {access_token}'})
+
+def test_delete_user(auth_client, app):
+    client, auth_header, test_email = auth_client
+
+    response = client.delete('/delete', headers=auth_header)
+
     assert response.status_code == 200
     assert response.json['message'] == 'User deleted successfully'
-    # Verificar que el usuario haya sido eliminado
-    user = User.query.filter_by(email='test@example.com').first()
-    assert user is None
+    
+    with app.app_context():
+        user = User.query.filter_by(email=test_email).first()
+        assert user is None

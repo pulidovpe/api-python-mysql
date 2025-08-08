@@ -1,62 +1,66 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from app import db
 from app.models.user import User
+from passlib.apps import custom_app_context as pwd_context
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from werkzeug.exceptions import BadRequest, NotFound
 
 user_bp = Blueprint('user', __name__)
 
 @user_bp.route('/update', methods=['PUT'])
 @jwt_required()
 def update_user():
-    current_user_id = get_jwt_identity()
-    data = request.get_json()
-    fullname = data.get('fullname')
-    email = data.get('email')
-
-    user = User.query.get(current_user_id)
+    from app import db
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
     if not user:
-        return jsonify({'message': 'User not found'}), 404
+        raise NotFound('User not found')
 
-    if fullname:
-        user.fullname = fullname
-    if email and email != user.email:
-        if User.query.filter_by(email=email).first():
-            return jsonify({'message': 'Email already in use'}), 400
-        user.email = email
+    data = request.get_json(silent=True)
+    if not data:
+        raise BadRequest('No data provided')
+    if not any(key in data for key in ['fullname', 'email']):
+        raise BadRequest('Fullname or email is required')
+
+    if 'fullname' in data and data['fullname']:
+        user.fullname = data['fullname']
+    if 'email' in data and data['email']:
+        if User.query.filter_by(email=data['email']).filter(User.id != user.id).first():
+            raise BadRequest('Email already in use')
+        user.email = data['email']
 
     db.session.commit()
     return jsonify({
         'message': 'User updated successfully',
-        'dataUser': {'fullname': user.fullname, 'email': user.email},
-        'auth': True
+        'dataUser': {'fullname': user.fullname, 'email': user.email}
     }), 200
 
 @user_bp.route('/updatePassword', methods=['PUT'])
 @jwt_required()
 def update_password():
-    current_user_id = get_jwt_identity()
-    data = request.get_json()
-    new_password = data.get('newPassword')
-
-    if not new_password:
-        return jsonify({'message': 'New password required'}), 400
-
-    user = User.query.get(current_user_id)
+    from app import db
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
     if not user:
-        return jsonify({'message': 'User not found'}), 404
+        raise NotFound('User not found')
 
-    user.password = sha256.hash(new_password)
+    data = request.get_json(silent=True)
+    if not data or not data.get('newPassword'):
+        raise BadRequest('New password is required')
+
+    user.password = pwd_context.hash(data['newPassword'])
     db.session.commit()
-    return jsonify({'message': 'Password updated successfully', 'auth': True}), 200
+    return jsonify({'message': 'Password updated successfully'}), 200
 
 @user_bp.route('/delete', methods=['DELETE'])
 @jwt_required()
 def delete_user():
-    current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    from app import db
+    user_email = get_jwt_identity()
+    user = User.query.filter_by(email=user_email).first()
     if not user:
-        return jsonify({'message': 'User not found'}), 404
+        raise NotFound('User not found')
 
     db.session.delete(user)
     db.session.commit()
     return jsonify({'message': 'User deleted successfully'}), 200
+
