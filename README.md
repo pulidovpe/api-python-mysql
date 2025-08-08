@@ -50,7 +50,7 @@ DB_PASSWORD=password
 | `/`              | GET    | Ruta principal       |                            | `{"response":"Flask RESTful API"}`|
 | `/register`      | POST   | Crear usuario        | fullname, email, password  | JSON {message, access_token}       |
 | `/login`         | POST   | Autenticar usuario   | email, password            | JSON {access_token}                |
-| `/getAllUsers`   | GET    | Listar usuarios      | Bearer Token               | JSON {users, total_users, message} |
+| `/getAllUsers`   | GET    | Listar usuarios      | **Público (sin auth)**     | JSON {users, total_users, message} |
 | `/update`        | PUT    | Actualizar usuario   | Bearer Token, fullname/email | JSON {dataUser, message}         |
 | `/updatePassword`| PUT    | Actualizar contraseña| Bearer Token, newPassword  | JSON {message}                     |
 | `/delete`        | DELETE | Eliminar usuario     | Bearer Token               | JSON {message}                     |
@@ -72,7 +72,8 @@ Todos los tests están funcionando correctamente:
 
 - ✅ **test_register**: Verifica la creación de usuarios
 - ✅ **test_login**: Verifica la autenticación de usuarios  
-- ✅ **test_get_all_users**: Verifica la obtención de lista de usuarios
+- ✅ **test_get_all_users_public**: Verifica acceso público a lista de usuarios
+- ✅ **test_get_all_users_with_auth**: Verifica acceso con autenticación a lista de usuarios
 - ✅ **test_update_user**: Verifica la actualización de datos de usuario
 - ✅ **test_update_password**: Verifica la actualización de contraseñas
 - ✅ **test_delete_user**: Verifica la eliminación de usuarios
@@ -94,6 +95,7 @@ Todos los tests están funcionando correctamente:
 - **Tests**: Todos los tests funcionan con contexto de aplicación apropiado
 - **Base de datos**: Configuración SQLite en memoria para tests
 - **Nueva funcionalidad**: Endpoint `/getAllUsers` para listar usuarios (sin contraseñas)
+- **Endpoint público**: `/getAllUsers` ahora es accesible sin autenticación
 
 ## Licencia
 

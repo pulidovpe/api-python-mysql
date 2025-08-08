@@ -24,9 +24,8 @@ def get_profile():
     }), 200
 
 @user_bp.route('/getAllUsers', methods=['GET'])
-@jwt_required()
 def get_all_users():
-    """Obtener lista de todos los usuarios (sin contraseñas)"""
+    """Obtener lista de todos los usuarios (sin contraseñas) - Endpoint público"""
     users = User.query.all()
     users_list = []
     

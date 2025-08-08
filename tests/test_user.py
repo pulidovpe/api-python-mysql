@@ -30,7 +30,38 @@ def auth_client(client, app):
     return client, auth_header, test_email
 
 
-def test_get_all_users(auth_client, app):
+def test_get_all_users_public(client, app):
+    """Test para verificar que getAllUsers funciona sin autenticación"""
+    
+    # Crear algunos usuarios para la prueba
+    with app.app_context():
+        # Crear usuarios directamente en la BD
+        user1 = User(fullname=fake.name(), email=fake.email(), password='hashed_password_1')
+        user2 = User(fullname=fake.name(), email=fake.email(), password='hashed_password_2')
+        from app import db
+        db.session.add(user1)
+        db.session.add(user2)
+        db.session.commit()
+
+    # Hacer request sin headers de autorización
+    response = client.get('/getAllUsers')
+
+    assert response.status_code == 200
+    assert response.json['message'] == 'Users retrieved successfully'
+    assert 'users' in response.json
+    assert 'total_users' in response.json
+    assert response.json['total_users'] >= 2  # Al menos 2 usuarios creados
+    
+    # Verificar que los usuarios no incluyen contraseñas
+    for user in response.json['users']:
+        assert 'id' in user
+        assert 'fullname' in user
+        assert 'email' in user
+        assert 'password' not in user  # No debe incluir contraseñas
+
+
+def test_get_all_users_with_auth(auth_client, app):
+    """Test para verificar que getAllUsers también funciona con autenticación"""
     client, auth_header, test_email = auth_client
     
     # Crear algunos usuarios adicionales para la prueba
@@ -43,6 +74,7 @@ def test_get_all_users(auth_client, app):
         db.session.add(user2)
         db.session.commit()
 
+    # Hacer request con headers de autorización
     response = client.get('/getAllUsers', headers=auth_header)
 
     assert response.status_code == 200
