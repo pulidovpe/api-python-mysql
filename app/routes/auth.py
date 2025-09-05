@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from passlib.apps import custom_app_context as pwd_context
 from flask_jwt_extended import create_access_token
 from app import db
@@ -22,6 +22,9 @@ def register():
     db.session.add(new_user)
     db.session.commit()
 
+    # 🔹 Agrega el counter después de registrar con éxito
+    current_app.request_counter.add(1, {"method": request.method, "endpoint": request.path})
+
     # Usamos el email del usuario como identidad en el JWT
     access_token = create_access_token(identity=new_user.email)
     return jsonify({'message': 'User created successfully', 'access_token': access_token}), 201
@@ -39,6 +42,9 @@ def login():
     if not user or not user.verify_password(data['password']):
         raise Unauthorized('Invalid credentials')
 
+    # 🔹 Agrega el counter después de validar las credenciales con éxito
+    current_app.request_counter.add(1, {"method": request.method, "endpoint": request.path})
+
     # Usamos el email del usuario como identidad en el JWT
     access_token = create_access_token(identity=user.email)
-    return jsonify({'access_token': access_token}), 200
+    return jsonify({'message': 'Login successful', 'access_token': access_token}), 200
