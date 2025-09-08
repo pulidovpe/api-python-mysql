@@ -49,6 +49,8 @@ def create_app(config_class=None):
     meter = metrics.get_meter(__name__)
     app.request_counter = meter.create_counter("http.requests.total", description="Número total de requests")
     FlaskInstrumentor().instrument_app(app)
+    request_latency = meter.create_histogram("http.request.latency", unit="seconds", description="Latency of HTTP requests")
+    # En los endpoints, registra: request_latency.record(0.5) con el tiempo medido.
 
     @app.route('/metrics')
     def metrics_route():
