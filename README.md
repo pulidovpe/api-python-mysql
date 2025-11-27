@@ -1,102 +1,140 @@
 # API Python MySQL
 
-API RESTful usando Python, Flask, SQLAlchemy y MySQL con Pruebas Unitarias.
+API RESTful usando Python, Flask y SQLAlchemy con una base MySQL (o SQLite en modo testing).
 
-## 🚀 Tecnologías Usadas
+## 🚀 Tecnologías
 
 - Python 3.9+
-- Flask 2.0.1
-- SQLAlchemy 1.4.22
-- MySQL
-- Flask-JWT-Extended 4.3.1
-- pytest 6.2.5
-- passlib (para hashing de contraseñas)
+- Flask
+- SQLAlchemy + PyMySQL
+- Flask-JWT-Extended
+- pytest (tests)
+- python-dotenv (lectura de `.env`)
 
-## 🛠️ Instalación
+## 🛠 Instalación rápida
 
-1. Clonar el repositorio:
-   ```
-   git clone https://github.com/usuario/api-python-mysql.git
-   ```
-2. Instalar dependencias:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Configurar variables de entorno en `.env`.
-4. Correr la aplicación:
-   ```
-   python run.py
-   ```
+1. Clona el repositorio:
 
-## 🔧 Variables de Entorno
-
-Crear un archivo `.env` con:
-```
-APP_PORT=3000
-APP_SECRET=your-secret-key-here
-APP_HOST=localhost
-DB_HOST=localhost
-DB_CONNECTION=mysql
-DB_PORT=3306
-DB_DATABASE=api_python_mysql
-DB_USERNAME=root
-DB_PASSWORD=password
+```bash
+git clone <repo-url> api-python-mysql
+cd api-python-mysql
 ```
 
-## 📋 Endpoints
+# API Python MySQL
 
-| Endpoint         | Método | Descripción          | Requerido                  | Respuesta                          |
-|------------------|--------|----------------------|----------------------------|------------------------------------|
-| `/`              | GET    | Ruta principal       |                            | `{"response":"Flask RESTful API"}`|
-| `/register`      | POST   | Crear usuario        | fullname, email, password  | JSON {message, access_token}       |
-| `/login`         | POST   | Autenticar usuario   | email, password            | JSON {access_token}                |
-| `/getAllUsers`   | GET    | Listar usuarios      | **Público (sin auth)**     | JSON {users, total_users, message} |
-| `/update`        | PUT    | Actualizar usuario   | Bearer Token, fullname/email | JSON {dataUser, message}         |
-| `/updatePassword`| PUT    | Actualizar contraseña| Bearer Token, newPassword  | JSON {message}                     |
-| `/delete`        | DELETE | Eliminar usuario     | Bearer Token               | JSON {message}                     |
+API RESTful usando Python, Flask y SQLAlchemy con soporte para MySQL (y SQLite en modo testing).
 
-## 🔍 Pruebas
+## Tecnologías
 
-Ejecutar pruebas unitarias:
+- Python 3.9+
+- Flask
+- SQLAlchemy + PyMySQL
+- Flask-JWT-Extended
+- pytest
+- python-dotenv
+
+## Instalación rápida
+
+1. Clona el repo:
+
+```bash
+git clone <repo-url> api-python-mysql
+cd api-python-mysql
 ```
-pytest
+
+2. Crea y activa un virtualenv (recomendado):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
 ```
-ó, si usas un entorno virtual:
+
+3. Instala dependencias:
+
+```bash
+pip install -r requirements.txt
 ```
-source venv/bin/activate && python -m pytest tests/ -v
+
+## Configurar `.env`
+
+Usa `EXAMPLE.env` como plantilla:
+
+```bash
+cp EXAMPLE.env .env
+# editar .env con tus credenciales
 ```
 
-### Estado de los Tests ✅
+Variables importantes (en `.env`):
 
-Todos los tests están funcionando correctamente:
+- `APP_PORT` (por defecto 3000)
+- `APP_SECRET`
+- `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
 
-- ✅ **test_register**: Verifica la creación de usuarios
-- ✅ **test_login**: Verifica la autenticación de usuarios  
-- ✅ **test_get_all_users_public**: Verifica acceso público a lista de usuarios
-- ✅ **test_get_all_users_with_auth**: Verifica acceso con autenticación a lista de usuarios
-- ✅ **test_update_user**: Verifica la actualización de datos de usuario
-- ✅ **test_update_password**: Verifica la actualización de contraseñas
-- ✅ **test_delete_user**: Verifica la eliminación de usuarios
+La aplicación carga `.env` automáticamente con `python-dotenv`.
 
-## 🔧 Correcciones Recientes
+## Ejecutar la aplicación
 
-### Problemas Solucionados:
+Desarrollo:
 
-1. **Importación del modelo User**: Se agregó `__init__.py` en `app/models/`
-2. **Configuración duplicada**: Se eliminó la clase `TestingConfig` duplicada en `config.py`
-3. **Hashing de contraseñas**: Se unificó el uso de `passlib` en lugar de `werkzeug.security`
-4. **JWT Identity**: Se cambió de usar ID (entero) a email (string) como identity en JWT
-5. **Contexto de aplicación**: Se corrigió el acceso a la base de datos en tests usando `app.app_context()`
+```bash
+python run.py
+```
 
-### Cambios Técnicos:
+Testing (usa SQLite en memoria — no necesita MySQL):
 
-- **Autenticación**: Ahora usa `passlib` para hashing consistente
-- **JWT**: Usa email como identity en lugar de ID de usuario
-- **Tests**: Todos los tests funcionan con contexto de aplicación apropiado
-- **Base de datos**: Configuración SQLite en memoria para tests
-- **Nueva funcionalidad**: Endpoint `/getAllUsers` para listar usuarios (sin contraseñas)
-- **Endpoint público**: `/getAllUsers` ahora es accesible sin autenticación
+```bash
+FLASK_ENV=testing python run.py
+```
 
-## Licencia
+Producción (asegúrate de definir variables en el entorno o en `.env`):
 
-Distribuido bajo la licencia MIT.
+```bash
+FLASK_ENV=production python run.py
+```
+
+## Endpoint de Health
+
+Se añadió `GET /health` como endpoint público para health checks.
+
+Comportamiento:
+- Respuesta 200 cuando el servicio y la base de datos responden: `{ "service": "ok", "database": "ok" }`.
+- Respuesta 503 cuando la comprobación de BD falla: `{ "service": "ok", "database": "unreachable", "error": "..." }`.
+
+Implementación:
+- La comprobación de BD ejecuta un `SELECT 1` usando `db.engine.connect()` para evitar efectos secundarios en la sesión.
+
+Uso con AWS Application Load Balancer (Target Group):
+
+- Path: `/health`
+- Protocol: `HTTP` (o `HTTPS` si tu listener es HTTPS)
+- Port: el puerto del listener (ejemplo `80`/`443`) o `traffic port`
+- Matcher / Success codes: `200` (o `200-399` si prefieres aceptar redirecciones)
+- Interval: `30` seconds (recomendado)
+- Timeout: `5` seconds
+- Healthy threshold: `2`
+- Unhealthy threshold: `2`
+
+Notas para ALB:
+- Si la BD está inaccesible el endpoint devuelve 503 y el ALB marcará el target como unhealthy — esto es útil para evitar enviar tráfico a instancias con problemas de persistencia.
+- Asegúrate de que las reglas de seguridad (Security Groups) permiten al ALB realizar las comprobaciones hacia las instancias en el puerto correcto.
+
+Ejemplo rápido (comprobar desde una máquina local o desde dentro de la VPC):
+
+```bash
+curl -i http://<instance-or-lb-dns>:3000/health
+```
+
+## Tests
+
+```bash
+pytest -q
+```
+
+Los tests usan `sqlite:///:memory:` y no requieren MySQL.
+
+## Buenas prácticas
+
+- No subir `.env` a repositorios públicos.
+- En producción considerar separar la comprobación de salud en dos endpoints si prefieren que el ALB solo verifique que el proceso está vivo (sin comprobar la BD). Por ejemplo:
+  - `/health` → comprobación completa (incluye BD)
+  - `/ready`  → readiness check más ligera (proc up, se usa para readiness probes)

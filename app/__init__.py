@@ -28,8 +28,10 @@ def create_app(config_class=None):
     # Registrar blueprints
     from .routes.auth import auth_bp
     from .routes.user import user_bp
+    from .routes.health import health_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(user_bp)
+    app.register_blueprint(health_bp)
 
     # Crear tablas en entornos no productivos
     if app.config.get("TESTING") or app.config.get("DEBUG"):
