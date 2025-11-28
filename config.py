@@ -10,19 +10,29 @@ class BaseConfig:
 class DevelopmentConfig(BaseConfig):
     """Configuración para desarrollo"""
     DEBUG = True
+    DB_CONNECT_TIMEOUT = int(os.getenv('DB_CONNECT_TIMEOUT', '3'))
     SQLALCHEMY_DATABASE_URI = (
         f"mysql+pymysql://{os.getenv('DB_USERNAME', 'root')}:{os.getenv('DB_PASSWORD', '')}"
         f"@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_DATABASE', 'api_python_mysql')}"
     )
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "connect_args": {"connect_timeout": DB_CONNECT_TIMEOUT},
+        "pool_pre_ping": True,
+    }
 
 
 class ProductionConfig(BaseConfig):
     """Configuración para producción"""
     DEBUG = False
+    DB_CONNECT_TIMEOUT = int(os.getenv('DB_CONNECT_TIMEOUT', '3'))
     SQLALCHEMY_DATABASE_URI = (
         f"mysql+pymysql://{os.getenv('DB_USERNAME', 'root')}:{os.getenv('DB_PASSWORD', '')}"
         f"@{os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '3306')}/{os.getenv('DB_DATABASE', 'api_python_mysql')}"
     )
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "connect_args": {"connect_timeout": DB_CONNECT_TIMEOUT},
+        "pool_pre_ping": True,
+    }
 
 
 class TestingConfig(BaseConfig):

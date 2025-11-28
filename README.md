@@ -72,6 +72,12 @@ Variables importantes (en `.env`):
 
 La aplicación carga `.env` automáticamente con `python-dotenv`.
 
+Comportamiento cuando la base de datos no está disponible:
+
+- La aplicación ahora maneja la indisponibilidad de la base de datos sin caerse al arrancar.
+- Si la base de datos no está accesible, endpoints que necesiten DB devolverán HTTP `503` con un JSON explicando el error.
+- Usa `/health` para comprobar el estado del servicio y la BD antes de enrutar tráfico.
+
 ## Ejecutar la aplicación
 
 Desarrollo:
